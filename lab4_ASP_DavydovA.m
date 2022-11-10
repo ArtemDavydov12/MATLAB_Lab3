@@ -1,0 +1,84 @@
+%% Filters design
+freqArray = [31, 62, 125, 250, 500, 1000, 2000, 4000, 8000,16000];
+order = 1024;
+fS = 44100;
+f_bank = CreateFilters(freqArray, order, fS);
+nums=randperm(10,3);
+bTmp=f_bank(nums,:);
+for i=1:3
+[H(i, :), w(i,:)] = freqz(bTmp(i,:), 1, order);
+end
+todB=@(x)20*log10(x);
+H=todB(abs(H));
+w=(w/pi)*(fS/2);
+
+%% Graph with standard functions
+figure ('Name', '1');
+plot (w(1,:),H(1,:),'Color','black','LineWidth',1);
+title ('Filter numbers: №1, №2, №3', 'FontSize', 16);
+hold on;
+plot (w(2,:),H(2,:),'Color','blue','LineWidth',1,'Marker','*', 'LineStyle', '- -');
+hold on;
+plot (w(3,:),H(3,:),'Color','red','LineWidth',1,'Marker','s', 'LineStyle', '-.');
+hold on; grid on; legend;set(0,'DefaultAxesFontSize', 14);
+xlabel('f, kHz','FontSize',16); ylabel('|H|, dB','FontSize',16);
+xlim ([0,21000]); ylim([-60,10]); 
+xticks([2000, 8000, 16000]); xticklabels ({'2 kHz', '8 kHz', '16 kHz'});
+
+%% Graph with changing object propertie
+% 1360,40,560,400
+f3 = figure ('Name','3');
+ax3 = axes(f3);
+f3.Position = [1360, 40, 560, 400];
+hold on;
+grid on;
+p1 = plot (w(1,:),H(1,:));
+p2 = plot (w(2,:),H(2,:));
+p3 = plot (w(3,:),H(3,:));
+p1.Color = 'black';
+p2.Color = 'Blue';
+p3.Color = 'Red';
+p2.Marker = '*';
+p3.Marker = 'square';
+p1.LineWidth = 1;
+p2.LineWidth = 1;
+p3.LineWidth = 1;
+ax3.XLabel.String = 'f, kHz';
+ax3.XLabel.FontSize = 16;
+ax3.YLabel.String = 'H, db';
+ax3.YLabel.FontSize = 16;
+ax3.XLim = [0, 21000];
+ax3.YLim = [-60, 10];
+ax3.XTick = [2000, 8000, 16000];
+ax3.XTickLabel = {'2 kHz', '8 kHz', '16 kHz'};
+ax3.Title.String = 'Filter numbers: №1, №2, №3';
+ax3.Title.FontSize = 16;
+%% Graph with no formatting
+%Функция "createfigure2.m"
+
+%% Graph with autofunc
+createfigure2(w(1, :), H);
+hold on;
+
+%% Filtering of signals
+gain = [1, 1, 1, 1, 1, 1, 1, 1, 1, 0];
+gain = gain';
+[signal, fS] = audioread('song.mp3');
+t = ((0:length(signal) - 1) / fS);
+sig = sin(2*pi*15000*t);
+sig = [sig' sig'];
+signal = signal + sig;
+[pxx1, f1] = pspectrum(signal, fS);
+signalOut = filteringBanks(signal, f_bank, gain, 'fftfilter');
+figure (5);
+subplot(1 ,2, 1);
+plot(f, pxx);
+subplot(1, 2, 2);
+plot(f1, pxx1);
+
+%% Spectogram
+[s, f, t] = spectrogram(signal(:, 1), 2^10, [], freqArray, fS);
+[F, T] = meshgrid(f, t);
+set(gca, 'Xscale', 'log');
+mesh(F, T, abs(s'));
+
